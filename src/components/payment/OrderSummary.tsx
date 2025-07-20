@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -13,7 +14,7 @@ interface OrderSummaryProps {
 
 export function OrderSummary({ paymentIntent, onReset }: OrderSummaryProps) {
   const { id, amount, currency, charges } = paymentIntent;
-  const cardDetails = charges.data[0]?.payment_method_details?.card;
+  const cardDetails = charges?.data[0]?.payment_method_details?.card;
 
   return (
     <div className="space-y-6 text-center">

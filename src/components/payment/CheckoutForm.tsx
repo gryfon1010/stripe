@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -6,7 +7,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createPaymentIntent } from "@/lib/actions";
+import { handlePaymentIntent } from "@/lib/actions";
 import { Loader2, CreditCard } from "lucide-react";
 
 interface CheckoutFormProps {
@@ -41,7 +42,7 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
     }
 
     // If client-side validation is successful, create the Payment Intent
-    const { clientSecret, error: backendError } = await createPaymentIntent({
+    const { clientSecret, error: backendError } = await handlePaymentIntent({
       amount: parseFloat(amount),
     });
 
@@ -64,7 +65,16 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
     if (error) {
       onError(error.message || "An unexpected error occurred.");
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
-      onPaymentSuccess(paymentIntent);
+      // Refetch the payment intent from the server to get full details
+      const { paymentIntent: fullPaymentIntent, error: fetchError } = await handlePaymentIntent({
+        paymentIntentId: paymentIntent.id,
+      });
+
+      if (fetchError || !fullPaymentIntent) {
+        onError(fetchError || "Failed to retrieve payment details.");
+      } else {
+        onPaymentSuccess(fullPaymentIntent);
+      }
     } else {
       onError("Payment was not successful.");
     }
