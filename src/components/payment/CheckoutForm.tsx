@@ -33,7 +33,16 @@ function FormContent({ secretKey, onPaymentSuccess, onError, onChangeKey }: Form
 
     setIsLoading(true);
     onError("");
+    
+    // First, submit the form to validate payment details on the client side
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      onError(submitError.message || "An unexpected error occurred during form submission.");
+      setIsLoading(false);
+      return;
+    }
 
+    // If client-side validation is successful, create the Payment Intent
     const { clientSecret, error: backendError } = await createPaymentIntent({
       amount: parseFloat(amount),
       apiKey: secretKey,
@@ -45,6 +54,7 @@ function FormContent({ secretKey, onPaymentSuccess, onError, onChangeKey }: Form
       return;
     }
 
+    // Now, confirm the payment
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       clientSecret,
