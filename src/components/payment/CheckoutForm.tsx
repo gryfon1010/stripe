@@ -48,7 +48,9 @@ function FormContent({ secretKey, onPaymentSuccess, onError, onChangeKey }: Form
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       clientSecret,
-      confirmParams: {},
+      confirmParams: {
+        return_url: window.location.href,
+      },
       redirect: "if_required",
     });
 
