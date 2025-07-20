@@ -22,7 +22,7 @@ interface FormContentProps extends Omit<CheckoutFormProps, 'stripePromise'>{}
 function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState("10.00");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +58,7 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
       elements,
       clientSecret,
       confirmParams: {
-        return_url: window.location.href,
+        return_url: `${window.location.origin}/return`, // a dummy page for now
       },
       redirect: "if_required",
     });

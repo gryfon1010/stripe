@@ -22,27 +22,31 @@ interface PaymentIntentResponse {
   error?: string;
 }
 
-export async function handlePaymentIntent(
-  options: PaymentIntentOptions
-): Promise<PaymentIntentResponse> {
+const getStripe = () => {
   const apiKey = process.env.STRIPE_SECRET_KEY;
-
   if (!apiKey) {
-    return { error: "Stripe API key is not configured." };
+    throw new Error("Stripe API key is not configured.");
   }
-  
-  const stripe = new Stripe(apiKey, {
+  return new Stripe(apiKey, {
     apiVersion: "2024-06-20",
     typescript: true,
   });
+}
+
+export async function handlePaymentIntent(
+  options: PaymentIntentOptions
+): Promise<PaymentIntentResponse> {
+  const stripe = getStripe();
 
   if (options.paymentIntentId) {
     try {
       const paymentIntent = await stripe.paymentIntents.retrieve(options.paymentIntentId, {
-        expand: ['charges.data.payment_method_details']
+        expand: ['payment_method']
       });
       
-      const cardDetails = paymentIntent.charges?.data[0]?.payment_method_details?.card;
+      const cardDetails = paymentIntent.payment_method && typeof paymentIntent.payment_method !== 'string' 
+        ? paymentIntent.payment_method.card
+        : null;
 
       const simplifiedIntent: SimplePaymentIntent = {
         id: paymentIntent.id,
@@ -78,4 +82,38 @@ export async function handlePaymentIntent(
   }
 
   return { error: "Invalid options provided." };
+}
+
+export async function handleWebhook(signature: string, body: string) {
+  const stripe = getStripe();
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error("Stripe webhook secret is not configured.");
+    return { error: "Webhook secret not configured.", status: 500 };
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err: any) {
+    console.error(`Webhook Error: ${err.message}`);
+    return { error: `Webhook Error: ${err.message}`, status: 400 };
+  }
+  
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntentSucceeded = event.data.object;
+      // Then define and call a function to handle the successful payment intent.
+      // e.g. fulfillTheOrder(paymentIntentSucceeded)
+      console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful!`);
+      break;
+    // ... handle other event types
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  return { received: true, status: 200 };
 }

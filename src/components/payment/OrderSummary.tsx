@@ -17,7 +17,7 @@ export function OrderSummary({ paymentIntent, onReset }: OrderSummaryProps) {
 
   return (
     <div className="space-y-6 text-center">
-      <CheckCircle2 className="mx-auto h-16 w-16 text-accent" />
+      <CheckCircle2 className="mx-auto h-16 w-16 text-green-500" />
       <div className="space-y-2">
         <h2 className="text-2xl font-bold font-headline">Payment Successful!</h2>
         <p className="text-muted-foreground">
