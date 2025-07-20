@@ -5,7 +5,6 @@ import Stripe from "stripe";
 
 interface CreatePaymentIntentOptions {
   amount: number;
-  apiKey: string;
 }
 
 interface CreatePaymentIntentResponse {
@@ -16,10 +15,11 @@ interface CreatePaymentIntentResponse {
 export async function createPaymentIntent(
   options: CreatePaymentIntentOptions
 ): Promise<CreatePaymentIntentResponse> {
-  const { amount, apiKey } = options;
+  const { amount } = options;
+  const apiKey = process.env.STRIPE_SECRET_KEY;
 
   if (!apiKey) {
-    return { error: "Stripe API key is not provided." };
+    return { error: "Stripe API key is not configured." };
   }
   
   if (!amount || amount <= 0) {
