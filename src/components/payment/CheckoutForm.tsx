@@ -11,7 +11,7 @@ import { Loader2, CreditCard } from "lucide-react";
 
 interface CheckoutFormProps {
   stripePromise: Promise<StripeType | null>;
-  apiKey: string;
+  secretKey: string;
   onPaymentSuccess: (paymentIntent: PaymentIntent) => void;
   onError: (message: string) => void;
   onChangeKey: () => void;
@@ -19,7 +19,7 @@ interface CheckoutFormProps {
 
 interface FormContentProps extends Omit<CheckoutFormProps, 'stripePromise'>{}
 
-function FormContent({ apiKey, onPaymentSuccess, onError, onChangeKey }: FormContentProps) {
+function FormContent({ secretKey, onPaymentSuccess, onError, onChangeKey }: FormContentProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [amount, setAmount] = useState("");
@@ -36,7 +36,7 @@ function FormContent({ apiKey, onPaymentSuccess, onError, onChangeKey }: FormCon
 
     const { clientSecret, error: backendError } = await createPaymentIntent({
       amount: parseFloat(amount),
-      apiKey: apiKey,
+      apiKey: secretKey,
     });
 
     if (backendError || !clientSecret) {
@@ -103,7 +103,7 @@ function FormContent({ apiKey, onPaymentSuccess, onError, onChangeKey }: FormCon
           )}
         </Button>
         <Button variant="link" size="sm" className="w-full" onClick={onChangeKey}>
-            Use a different API Key
+            Use different API Keys
         </Button>
       </form>
     </div>

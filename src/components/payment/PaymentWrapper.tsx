@@ -14,7 +14,8 @@ import { Terminal } from "lucide-react";
 type View = "apiKey" | "checkout" | "summary";
 
 export function PaymentWrapper() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [secretKey, setSecretKey] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<Promise<StripeType | null> | null>(null);
   const [view, setView] = useState<View>("apiKey");
   const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
@@ -23,27 +24,33 @@ export function PaymentWrapper() {
 
   useEffect(() => {
     setIsMounted(true);
-    const storedApiKey = localStorage.getItem("stripeApiKey");
-    if (storedApiKey) {
-      handleApiKeySubmit(storedApiKey);
+    const storedPublishableKey = localStorage.getItem("stripePublishableKey");
+    const storedSecretKey = localStorage.getItem("stripeSecretKey");
+    if (storedPublishableKey && storedSecretKey) {
+      handleApiKeysSubmit({ publishableKey: storedPublishableKey, secretKey: storedSecretKey });
     }
   }, []);
   
-  const handleApiKeySubmit = (key: string) => {
-    if (key && key.startsWith("sk_")) {
-      setApiKey(key);
-      localStorage.setItem("stripeApiKey", key);
+  const handleApiKeysSubmit = (keys: { publishableKey: string; secretKey: string }) => {
+    const { publishableKey, secretKey } = keys;
+    if (publishableKey && publishableKey.startsWith("pk_") && secretKey && secretKey.startsWith("sk_")) {
+      setPublishableKey(publishableKey);
+      setSecretKey(secretKey);
+      localStorage.setItem("stripePublishableKey", publishableKey);
+      localStorage.setItem("stripeSecretKey", secretKey);
       try {
-        setStripePromise(loadStripe(key.replace(/_(test|live)_/, '_test_').split('_')[0] + '_test_' + key.split('_')[2]));
+        setStripePromise(loadStripe(publishableKey));
         setView("checkout");
         setError(null);
       } catch (e) {
-        setError("Invalid Stripe API key format.");
-        setApiKey(null);
-        localStorage.removeItem("stripeApiKey");
+        setError("Invalid Stripe Publishable key format.");
+        setPublishableKey(null);
+        setSecretKey(null);
+        localStorage.removeItem("stripePublishableKey");
+        localStorage.removeItem("stripeSecretKey");
       }
     } else {
-        setError("Invalid Stripe API key provided. It should start with 'sk_'.");
+        setError("Invalid Stripe keys provided. Please check your keys and try again.");
     }
   };
 
@@ -58,21 +65,23 @@ export function PaymentWrapper() {
   };
   
   const handleKeyChange = () => {
-      setApiKey(null);
-      localStorage.removeItem("stripeApiKey");
+      setPublishableKey(null);
+      setSecretKey(null);
+      localStorage.removeItem("stripePublishableKey");
+      localStorage.removeItem("stripeSecretKey");
       setView("apiKey");
   }
 
   const renderView = () => {
     switch (view) {
       case "apiKey":
-        return <ApiKeyForm onSubmit={handleApiKeySubmit} />;
+        return <ApiKeyForm onApiKeysSubmit={handleApiKeysSubmit} />;
       case "checkout":
-        if (apiKey && stripePromise) {
+        if (secretKey && stripePromise) {
           return (
             <CheckoutForm
               stripePromise={stripePromise}
-              apiKey={apiKey}
+              secretKey={secretKey}
               onPaymentSuccess={handlePaymentSuccess}
               onError={setError}
               onChangeKey={handleKeyChange}
