@@ -8,9 +8,17 @@ interface PaymentIntentOptions {
   paymentIntentId?: string;
 }
 
+export interface SimplePaymentIntent {
+  id: string;
+  amount: number;
+  currency: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+}
+
 interface PaymentIntentResponse {
   clientSecret?: string;
-  paymentIntent?: Stripe.PaymentIntent;
+  paymentIntent?: SimplePaymentIntent;
   error?: string;
 }
 
@@ -30,8 +38,21 @@ export async function handlePaymentIntent(
 
   if (options.paymentIntentId) {
     try {
-      const paymentIntent = await stripe.paymentIntents.retrieve(options.paymentIntentId);
-      return { paymentIntent };
+      const paymentIntent = await stripe.paymentIntents.retrieve(options.paymentIntentId, {
+        expand: ['charges.data.payment_method_details']
+      });
+      
+      const cardDetails = paymentIntent.charges?.data[0]?.payment_method_details?.card;
+
+      const simplifiedIntent: SimplePaymentIntent = {
+        id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        cardBrand: cardDetails?.brand || null,
+        cardLast4: cardDetails?.last4 || null,
+      };
+      
+      return { paymentIntent: simplifiedIntent };
     } catch (e: any) {
       return { error: e.message };
     }

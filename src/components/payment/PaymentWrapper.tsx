@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import type { Stripe as StripeType, PaymentIntent } from "@stripe/stripe-js";
+import type { Stripe as StripeType } from "@stripe/stripe-js";
+import type { SimplePaymentIntent } from "@/lib/actions";
 import { loadStripe } from "@stripe/stripe-js";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckoutForm } from "./CheckoutForm";
@@ -16,7 +17,7 @@ type View = "checkout" | "summary";
 export function PaymentWrapper() {
   const [stripePromise, setStripePromise] = useState<Promise<StripeType | null> | null>(null);
   const [view, setView] = useState<View>("checkout");
-  const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
+  const [paymentIntent, setPaymentIntent] = useState<SimplePaymentIntent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -31,7 +32,7 @@ export function PaymentWrapper() {
     }
   }, []);
   
-  const handlePaymentSuccess = (intent: PaymentIntent) => {
+  const handlePaymentSuccess = (intent: SimplePaymentIntent) => {
     setPaymentIntent(intent);
     setView("summary");
     setError(null);

@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Stripe as StripeType, PaymentIntent, StripeElementsOptions } from "@stripe/stripe-js";
+import type { Stripe as StripeType, StripeElementsOptions } from "@stripe/stripe-js";
+import type { SimplePaymentIntent } from "@/lib/actions";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Loader2, CreditCard } from "lucide-react";
 
 interface CheckoutFormProps {
   stripePromise: Promise<StripeType | null>;
-  onPaymentSuccess: (paymentIntent: PaymentIntent) => void;
+  onPaymentSuccess: (paymentIntent: SimplePaymentIntent) => void;
   onError: (message: string) => void;
 }
 

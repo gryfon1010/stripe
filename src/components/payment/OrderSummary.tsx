@@ -2,19 +2,18 @@
 "use client";
 
 import React from "react";
-import type { PaymentIntent } from "@stripe/stripe-js";
+import type { SimplePaymentIntent } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface OrderSummaryProps {
-  paymentIntent: PaymentIntent;
+  paymentIntent: SimplePaymentIntent;
   onReset: () => void;
 }
 
 export function OrderSummary({ paymentIntent, onReset }: OrderSummaryProps) {
-  const { id, amount, currency, charges } = paymentIntent;
-  const cardDetails = charges?.data[0]?.payment_method_details?.card;
+  const { id, amount, currency, cardBrand, cardLast4 } = paymentIntent;
 
   return (
     <div className="space-y-6 text-center">
@@ -36,12 +35,12 @@ export function OrderSummary({ paymentIntent, onReset }: OrderSummaryProps) {
           </span>
         </div>
         
-        {cardDetails && (
+        {cardBrand && cardLast4 && (
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Payment Method:</span>
             <div className="flex items-center gap-2">
-              <span className="font-medium capitalize text-foreground">{cardDetails.brand}</span>
-              <Badge variant="outline">**** {cardDetails.last4}</Badge>
+              <span className="font-medium capitalize text-foreground">{cardBrand}</span>
+              <Badge variant="outline">**** {cardLast4}</Badge>
             </div>
           </div>
         )}
