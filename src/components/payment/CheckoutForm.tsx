@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Stripe as StripeType, StripeElementsOptions } from "@stripe/stripe-js";
 import type { SimplePaymentIntent } from "@/lib/actions";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -24,6 +24,7 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
   const elements = useElements();
   const [amount, setAmount] = useState("10.00");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPaymentElementComplete, setIsPaymentElementComplete] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,11 +111,11 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
             />
           </div>
         </div>
-        <PaymentElement />
+        <PaymentElement onChange={(e) => setIsPaymentElementComplete(e.complete)} />
         <Button
           type="submit"
           className="w-full transition-all"
-          disabled={!stripe || !elements || isLoading || !amount}
+          disabled={!stripe || !elements || isLoading || !amount || !isPaymentElementComplete}
         >
           {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
