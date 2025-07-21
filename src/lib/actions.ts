@@ -60,13 +60,12 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
     const result = await paymentsCollection.insertOne(payment);
     console.log(`Successfully inserted payment ${paymentIntent.id} into DB with _id: ${result.insertedId}`);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("CRITICAL: Failed to fulfill order and save to DB.", {
       paymentIntentId: paymentIntent.id,
-      error: error,
+      error: error.message,
+      stack: error.stack,
     });
-    // You might want to add more robust error handling here,
-    // like sending a notification to your team.
   }
 }
 
@@ -139,7 +138,7 @@ export async function handlePaymentIntent(
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(options.amount * 100), // Amount in cents
         currency: "usd",
-        payment_method_types: ['card'], // Explicitly request only card payments
+        automatic_payment_methods: { enabled: true },
         receipt_email: 'customer@example.com', // Example email, replace with actual customer email if available
       });
 
