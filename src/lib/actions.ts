@@ -145,7 +145,10 @@ export async function handlePaymentIntent(
 
       return { clientSecret: paymentIntent.client_secret ?? undefined };
     } catch (e: any) {
-      console.error("Error creating payment intent:", e);
+      console.error("Error creating payment intent:", {
+        message: e.message,
+        stack: e.stack,
+      });
       return { error: e.message };
     }
   }
