@@ -21,13 +21,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400, headers: corsHeaders });
   }
 
-  const { received, error, status } = await handleWebhook(signature, body);
-
-  if (error) {
-    return NextResponse.json({ error }, { status, headers: corsHeaders });
-  }
+  // Acknowledge the webhook event immediately to prevent timeouts
+  (async () => {
+    try {
+      const { error, status } = await handleWebhook(signature, body);
+      if (error) {
+        console.error(`Webhook processing error: ${error}`, { status });
+      }
+    } catch (e: any) {
+        console.error(`Unhandled error in webhook processing: ${e.message}`);
+    }
+  })();
   
-  return NextResponse.json({ received }, { headers: corsHeaders });
+  // Return a 200 OK response to Stripe
+  return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
 }
 
 export async function OPTIONS() {
