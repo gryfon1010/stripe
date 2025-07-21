@@ -106,9 +106,24 @@ export async function handleWebhook(signature: string, body: string) {
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntentSucceeded = event.data.object;
-      // Then define and call a function to handle the successful payment intent.
-      // e.g. fulfillTheOrder(paymentIntentSucceeded)
       console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful!`);
+      // =========================================================================================
+      // TODO: Add your business logic here.
+      // This is where you would fulfill the order, update your database, or send an email.
+      // For example:
+      // await fulfillOrder(paymentIntentSucceeded.id);
+      // await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email);
+      // =========================================================================================
+      break;
+    case 'payment_intent.payment_failed':
+      const paymentIntentFailed = event.data.object;
+      console.log(`Payment failed for PaymentIntent: ${paymentIntentFailed.id}`);
+       // =========================================================================================
+      // TODO: Add your business logic here.
+      // This is where you might notify the user that their payment failed.
+      // For example:
+      // await sendPaymentFailedEmail(paymentIntentFailed.receipt_email);
+      // =========================================================================================
       break;
     // ... handle other event types
     default:
