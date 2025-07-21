@@ -15,16 +15,32 @@ interface CheckoutFormProps {
   stripePromise: Promise<StripeType | null>;
   onPaymentSuccess: (paymentIntent: SimplePaymentIntent) => void;
   onError: (message: string) => void;
+  code?: string | null;
 }
 
 interface FormContentProps extends Omit<CheckoutFormProps, 'stripePromise'>{}
 
-function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
+function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [amount, setAmount] = useState("10.00");
   const [isLoading, setIsLoading] = useState(false);
   const [isPaymentElementComplete, setIsPaymentElementComplete] = useState(false);
+
+  // Set default amount based on code
+  useEffect(() => {
+    if (code) {
+      // Map code to price - you can customize this logic later
+      const priceMap: { [key: string]: string } = {
+        'basic': '5.00',
+        'premium': '15.00',
+        'pro': '25.00',
+        'enterprise': '50.00'
+      };
+      const mappedPrice = priceMap[code.toLowerCase()] || '10.00';
+      setAmount(mappedPrice);
+    }
+  }, [code]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +62,7 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
     // If client-side validation is successful, create the Payment Intent
     const response = await handlePaymentIntent({
       amount: parseFloat(amount),
+      code: code || undefined,
     });
 
     if (!response) {
@@ -104,7 +121,7 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
          <CreditCard className="mx-auto h-12 w-12 text-primary" />
         <h2 className="text-2xl font-bold font-headline">One-Time Payment</h2>
         <p className="text-muted-foreground">
-          Enter an amount and your payment details below.
+          {code ? `Payment for code: ${code}` : 'Enter an amount and your payment details below.'}
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -122,6 +139,7 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
                 min="0.50"
                 step="0.01"
                 className="pl-7"
+                disabled={!!code}
             />
           </div>
         </div>

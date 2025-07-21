@@ -6,6 +6,7 @@ import Stripe from "stripe";
 interface PaymentIntentOptions {
   amount?: number;
   paymentIntentId?: string;
+  code?: string;
 }
 
 export interface SimplePaymentIntent {
@@ -31,6 +32,22 @@ const getStripe = () => {
     apiVersion: "2024-06-20",
     typescript: true,
   });
+}
+
+/**
+ * Maps a code to a price. You can customize this logic as needed.
+ * @param code The code to map to a price
+ * @returns The price in dollars
+ */
+function getCodePrice(code: string): number {
+  const priceMap: { [key: string]: number } = {
+    'basic': 5.00,
+    'premium': 15.00,
+    'pro': 25.00,
+    'enterprise': 50.00
+  };
+  
+  return priceMap[code.toLowerCase()] || 10.00; // Default to $10.00 if code not found
 }
 
 /**
@@ -104,16 +121,35 @@ export async function handlePaymentIntent(
     }
   }
   
-  if (options.amount) {
-     if (options.amount <= 0.50) {
-        return { error: "Amount must be at least $0.50." };
-      }
+  if (options.amount || options.code) {
+    // Determine the amount to charge
+    let finalAmount = options.amount;
+    
+    if (options.code && !options.amount) {
+      // If only code is provided, use the mapped price
+      finalAmount = getCodePrice(options.code);
+    } else if (options.code && options.amount) {
+      // If both are provided, you can choose to use code price or validate against it
+      const codePrice = getCodePrice(options.code);
+      console.log(`Code ${options.code} maps to $${codePrice}, but amount $${options.amount} was also provided`);
+      // For now, we'll use the provided amount, but you can change this logic
+      finalAmount = options.amount;
+    }
+    
+    if (!finalAmount || finalAmount <= 0.50) {
+      return { error: "Amount must be at least $0.50." };
+    }
+    
     try {
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(options.amount * 100), // Amount in cents
+        amount: Math.round(finalAmount * 100), // Amount in cents
         currency: "usd",
         automatic_payment_methods: { enabled: true },
         receipt_email: 'customer@example.com', // Example email, replace with actual customer email if available
+        metadata: {
+          code: options.code || 'no-code',
+          original_amount: finalAmount.toString()
+        }
       });
 
       return { clientSecret: paymentIntent.client_secret ?? undefined };

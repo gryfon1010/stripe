@@ -21,9 +21,16 @@ export function PaymentWrapper() {
   const [paymentIntent, setPaymentIntent] = useState<SimplePaymentIntent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [code, setCode] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    
+    // Extract code from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+    setCode(codeParam);
+    
     const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
     if (publishableKey) {
@@ -62,6 +69,7 @@ export function PaymentWrapper() {
             stripePromise={stripePromise}
             onPaymentSuccess={handlePaymentSuccess}
             onError={handleError}
+            code={code}
           />
         );
       case "summary":
