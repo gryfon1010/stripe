@@ -2,7 +2,6 @@
 "use server";
 
 import Stripe from "stripe";
-import { connectToDatabase } from "./db";
 
 interface PaymentIntentOptions {
   amount?: number;
@@ -35,52 +34,13 @@ const getStripe = () => {
 }
 
 /**
- * Stores the successful payment information in the database.
+ * Fulfills the order after successful payment.
  * @param paymentIntent The successful PaymentIntent object from Stripe.
  */
 async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
   console.log("Attempting to fulfill order for PaymentIntent:", paymentIntent.id);
-  try {
-    console.log("Connecting to database to fulfill order...");
-    const { db } = await connectToDatabase();
-    console.log("Database connection successful for fulfillment.");
-    
-    // Test database connection
-    await db.admin().ping();
-    console.log("Database ping successful.");
-    
-    const paymentsCollection = db.collection('payments');
-    
-    const payment = {
-      stripeId: paymentIntent.id,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-      status: paymentIntent.status,
-      receiptEmail: paymentIntent.receipt_email,
-      createdAt: new Date(paymentIntent.created * 1000), // Convert from Unix timestamp
-      processedAt: new Date(),
-    };
-
-    console.log("Inserting payment document:", JSON.stringify(payment, null, 2));
-    const result = await paymentsCollection.insertOne(payment);
-    console.log(`Successfully inserted payment ${paymentIntent.id} into DB with _id: ${result.insertedId}`);
-
-    // Verify the insertion
-    const insertedDoc = await paymentsCollection.findOne({ _id: result.insertedId });
-    console.log("Verified inserted document:", insertedDoc);
-
-  } catch (error: any) {
-    console.error("CRITICAL: Failed to fulfill order and save to DB.", {
-      paymentIntentId: paymentIntent.id,
-      error: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code,
-    });
-    
-    // Re-throw the error so it can be handled upstream if needed
-    throw error;
-  }
+  console.log(`Payment of ${paymentIntent.amount} succeeded! ID: ${paymentIntent.id}`);
+  // Add any other fulfillment logic here (email notifications, inventory updates, etc.)
 }
 
 /**
