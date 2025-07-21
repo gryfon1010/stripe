@@ -38,6 +38,10 @@ export function PaymentWrapper() {
     setView("summary");
     setError(null);
   };
+
+  const handleError = (message: string) => {
+    setError(message);
+  }
   
   const renderView = () => {
     if (!stripePromise) {
@@ -57,7 +61,7 @@ export function PaymentWrapper() {
           <CheckoutForm
             stripePromise={stripePromise}
             onPaymentSuccess={handlePaymentSuccess}
-            onError={setError}
+            onError={handleError}
           />
         );
       case "summary":
@@ -89,7 +93,7 @@ export function PaymentWrapper() {
         {error && (
             <Alert variant="destructive" className="mb-4">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>An Error Occurred</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}

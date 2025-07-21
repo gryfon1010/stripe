@@ -61,7 +61,10 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
     console.log(`Successfully inserted payment ${paymentIntent.id} into DB with _id: ${result.insertedId}`);
 
   } catch (error) {
-    console.error("Failed to fulfill order and save to DB:", error);
+    console.error("CRITICAL: Failed to fulfill order and save to DB.", {
+      paymentIntentId: paymentIntent.id,
+      error: error,
+    });
     // You might want to add more robust error handling here,
     // like sending a notification to your team.
   }
@@ -129,8 +132,8 @@ export async function handlePaymentIntent(
   }
   
   if (options.amount) {
-     if (options.amount <= 0) {
-        return { error: "Invalid amount." };
+     if (options.amount <= 0.50) {
+        return { error: "Amount must be at least $0.50." };
       }
     try {
       const paymentIntent = await stripe.paymentIntents.create({
