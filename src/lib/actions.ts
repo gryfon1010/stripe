@@ -33,6 +33,47 @@ const getStripe = () => {
   });
 }
 
+/**
+ * Placeholder function for fulfilling an order.
+ * @param paymentIntentId The ID of the successful PaymentIntent.
+ */
+async function fulfillOrder(paymentIntentId: string) {
+  // TODO: Implement your order fulfillment logic here.
+  // This could involve:
+  // - Updating your database to mark the order as paid.
+  // - Granting access to a digital product.
+  // - Triggering a shipping process.
+  console.log(`Fulfilling order for PaymentIntent: ${paymentIntentId}`);
+  // Example: await db.orders.update({ where: { paymentIntentId }, data: { status: 'PAID' } });
+  return Promise.resolve();
+}
+
+/**
+ * Placeholder function for sending an order confirmation email.
+ * @param customerEmail The email address of the customer.
+ */
+async function sendOrderConfirmationEmail(customerEmail: string | null) {
+  if (!customerEmail) return;
+  // TODO: Implement your email sending logic here.
+  // Use a service like SendGrid, Resend, or Nodemailer.
+  console.log(`Sending order confirmation to: ${customerEmail}`);
+  // Example: await emailService.send({ to: customerEmail, subject: 'Your order is confirmed!', ... });
+  return Promise.resolve();
+}
+
+/**
+ * Placeholder function for sending a payment failed email.
+ * @param customerEmail The email address of the customer.
+ */
+async function sendPaymentFailedEmail(customerEmail: string | null) {
+  if (!customerEmail) return;
+  // TODO: Implement your email sending logic for failed payments.
+  console.log(`Sending payment failed notification to: ${customerEmail}`);
+  // Example: await emailService.send({ to: customerEmail, subject: 'Your payment failed', ... });
+  return Promise.resolve();
+}
+
+
 export async function handlePaymentIntent(
   options: PaymentIntentOptions
 ): Promise<PaymentIntentResponse> {
@@ -73,6 +114,7 @@ export async function handlePaymentIntent(
         automatic_payment_methods: {
           enabled: true,
         },
+        receipt_email: 'customer@example.com', // Example email, replace with actual customer email if available
       });
 
       return { clientSecret: paymentIntent.client_secret ?? undefined };
@@ -107,25 +149,21 @@ export async function handleWebhook(signature: string, body: string) {
     case 'payment_intent.succeeded':
       const paymentIntentSucceeded = event.data.object;
       console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful!`);
-      // =========================================================================================
-      // TODO: Add your business logic here.
-      // This is where you would fulfill the order, update your database, or send an email.
-      // For example:
-      // await fulfillOrder(paymentIntentSucceeded.id);
-      // await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email);
-      // =========================================================================================
+      
+      // Fulfill the order and send a confirmation email.
+      await fulfillOrder(paymentIntentSucceeded.id);
+      await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email);
+      
       break;
     case 'payment_intent.payment_failed':
       const paymentIntentFailed = event.data.object;
       console.log(`Payment failed for PaymentIntent: ${paymentIntentFailed.id}`);
-       // =========================================================================================
-      // TODO: Add your business logic here.
-      // This is where you might notify the user that their payment failed.
-      // For example:
-      // await sendPaymentFailedEmail(paymentIntentFailed.receipt_email);
-      // =========================================================================================
+      
+      // Notify the user that their payment failed.
+      await sendPaymentFailedEmail(paymentIntentFailed.receipt_email);
+      
       break;
-    // ... handle other event types
+    // ... handle other event types you care about
     default:
       console.log(`Unhandled event type ${event.type}`);
   }
