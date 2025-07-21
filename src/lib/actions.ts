@@ -139,14 +139,13 @@ export async function handlePaymentIntent(
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(options.amount * 100), // Amount in cents
         currency: "usd",
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        payment_method_types: ['card'], // Explicitly request only card payments
         receipt_email: 'customer@example.com', // Example email, replace with actual customer email if available
       });
 
       return { clientSecret: paymentIntent.client_secret ?? undefined };
     } catch (e: any) {
+      console.error("Error creating payment intent:", e);
       return { error: e.message };
     }
   }
