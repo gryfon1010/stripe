@@ -19,18 +19,28 @@ let cachedDb: Db | null = null;
 
 export async function connectToDatabase() {
   if (cachedClient && cachedDb) {
+    console.log("Using cached MongoDB connection.");
     return { client: cachedClient, db: cachedDb };
   }
 
+  console.log("Creating new MongoDB connection...");
   const client = new MongoClient(uri);
 
-  await client.connect();
-  console.log("Successfully connected to MongoDB.");
-
-  const db = client.db(dbName);
-
-  cachedClient = client;
-  cachedDb = db;
-
-  return { client, db };
+  try {
+    await client.connect();
+    console.log("Successfully connected to MongoDB.");
+  
+    const db = client.db(dbName);
+  
+    cachedClient = client;
+    cachedDb = db;
+  
+    return { client, db };
+  } catch (error) {
+    console.error("Failed to connect to MongoDB", error);
+    // In case of a connection error, we ensure we don't cache a bad client.
+    cachedClient = null;
+    cachedDb = null;
+    throw error;
+  }
 }

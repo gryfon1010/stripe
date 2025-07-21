@@ -39,9 +39,12 @@ const getStripe = () => {
  * @param paymentIntent The successful PaymentIntent object from Stripe.
  */
 async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
+  console.log("Attempting to fulfill order for PaymentIntent:", paymentIntent.id);
   try {
     console.log("Connecting to database to fulfill order...");
     const { db } = await connectToDatabase();
+    console.log("Database connection successful for fulfillment.");
+    
     const paymentsCollection = db.collection('payments');
     
     const payment = {
@@ -52,7 +55,8 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
       receiptEmail: paymentIntent.receipt_email,
       createdAt: new Date(paymentIntent.created * 1000), // Convert from Unix timestamp
     };
-    
+
+    console.log("Inserting payment document:", payment);
     const result = await paymentsCollection.insertOne(payment);
     console.log(`Successfully inserted payment ${paymentIntent.id} into DB with _id: ${result.insertedId}`);
 
@@ -68,7 +72,10 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
  * @param customerEmail The email address of the customer.
  */
 async function sendOrderConfirmationEmail(customerEmail: string | null) {
-  if (!customerEmail) return;
+  if (!customerEmail) {
+    console.log("No customer email provided, skipping order confirmation email.");
+    return;
+  };
   // TODO: Implement your email sending logic here.
   // Use a service like SendGrid, Resend, or Nodemailer.
   console.log(`Sending order confirmation to: ${customerEmail}`);
@@ -81,7 +88,10 @@ async function sendOrderConfirmationEmail(customerEmail: string | null) {
  * @param customerEmail The email address of the customer.
  */
 async function sendPaymentFailedEmail(customerEmail: string | null) {
-  if (!customerEmail) return;
+  if (!customerEmail) {
+    console.log("No customer email provided, skipping payment failed email.");
+    return;
+  };
   // TODO: Implement your email sending logic for failed payments.
   console.log(`Sending payment failed notification to: ${customerEmail}`);
   // Example: await emailService.send({ to: customerEmail, subject: 'Your payment failed', ... });
@@ -142,6 +152,7 @@ export async function handlePaymentIntent(
 }
 
 export async function handleWebhook(signature: string, body: string) {
+  console.log("Stripe webhook handler invoked.");
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -154,6 +165,7 @@ export async function handleWebhook(signature: string, body: string) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    console.log("Stripe event constructed successfully:", event.id);
   } catch (err: any) {
     console.error(`Webhook signature verification failed: ${err.message}`);
     return { error: `Webhook Error: ${err.message}`, status: 400 };
@@ -164,8 +176,8 @@ export async function handleWebhook(signature: string, body: string) {
   // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
-      const paymentIntentSucceeded = event.data.object;
-      console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful!`);
+      const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
+      console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful! ID: ${paymentIntentSucceeded.id}`);
       
       // Fulfill the order and send a confirmation email.
       await fulfillOrder(paymentIntentSucceeded);
@@ -173,7 +185,7 @@ export async function handleWebhook(signature: string, body: string) {
       
       break;
     case 'payment_intent.payment_failed':
-      const paymentIntentFailed = event.data.object;
+      const paymentIntentFailed = event.data.object as Stripe.PaymentIntent;
       console.log(`Payment failed for PaymentIntent: ${paymentIntentFailed.id}`);
       
       // Notify the user that their payment failed.
