@@ -44,9 +44,17 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
     }
 
     // If client-side validation is successful, create the Payment Intent
-    const { clientSecret, error: backendError } = await handlePaymentIntent({
+    const response = await handlePaymentIntent({
       amount: parseFloat(amount),
     });
+
+    if (!response) {
+      onError("Failed to create payment intent - no response received.");
+      setIsLoading(false);
+      return;
+    }
+
+    const { clientSecret, error: backendError } = response;
 
     if (backendError || !clientSecret) {
       onError(backendError || "Failed to create payment intent.");
@@ -68,14 +76,20 @@ function FormContent({ onPaymentSuccess, onError }: FormContentProps) {
       onError(error.message || "An unexpected error occurred.");
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
       // Refetch the payment intent from the server to get full details
-      const { paymentIntent: fullPaymentIntent, error: fetchError } = await handlePaymentIntent({
+      const fetchResponse = await handlePaymentIntent({
         paymentIntentId: paymentIntent.id,
       });
 
-      if (fetchError || !fullPaymentIntent) {
-        onError(fetchError || "Failed to retrieve payment details.");
+      if (!fetchResponse) {
+        onError("Failed to retrieve payment details - no response received.");
       } else {
-        onPaymentSuccess(fullPaymentIntent);
+        const { paymentIntent: fullPaymentIntent, error: fetchError } = fetchResponse;
+        
+        if (fetchError || !fullPaymentIntent) {
+          onError(fetchError || "Failed to retrieve payment details.");
+        } else {
+          onPaymentSuccess(fullPaymentIntent);
+        }
       }
     } else {
       onError("Payment was not successful.");
