@@ -40,6 +40,7 @@ const getStripe = () => {
  */
 async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
   try {
+    console.log("Connecting to database to fulfill order...");
     const { db } = await connectToDatabase();
     const paymentsCollection = db.collection('payments');
     
@@ -52,8 +53,8 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
       createdAt: new Date(paymentIntent.created * 1000), // Convert from Unix timestamp
     };
     
-    await paymentsCollection.insertOne(payment);
-    console.log(`Successfully inserted payment ${paymentIntent.id} into DB.`);
+    const result = await paymentsCollection.insertOne(payment);
+    console.log(`Successfully inserted payment ${paymentIntent.id} into DB with _id: ${result.insertedId}`);
 
   } catch (error) {
     console.error("Failed to fulfill order and save to DB:", error);
@@ -154,10 +155,12 @@ export async function handleWebhook(signature: string, body: string) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
-    console.error(`Webhook Error: ${err.message}`);
+    console.error(`Webhook signature verification failed: ${err.message}`);
     return { error: `Webhook Error: ${err.message}`, status: 400 };
   }
   
+  console.log(`Received verified Stripe event: ${event.type}`);
+
   // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
