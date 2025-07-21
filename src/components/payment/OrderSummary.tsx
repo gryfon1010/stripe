@@ -3,16 +3,14 @@
 
 import React from "react";
 import type { SimplePaymentIntent } from "@/lib/actions";
-import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface OrderSummaryProps {
   paymentIntent: SimplePaymentIntent;
-  onReset: () => void;
 }
 
-export function OrderSummary({ paymentIntent, onReset }: OrderSummaryProps) {
+export function OrderSummary({ paymentIntent }: OrderSummaryProps) {
   const { id, amount, currency, cardBrand, cardLast4 } = paymentIntent;
 
   return (
@@ -52,9 +50,6 @@ export function OrderSummary({ paymentIntent, onReset }: OrderSummaryProps) {
           </span>
         </div>
       </div>
-      <Button onClick={onReset} className="w-full">
-        Make Another Payment
-      </Button>
     </div>
   );
 }

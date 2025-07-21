@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -38,12 +39,6 @@ export function PaymentWrapper() {
     setError(null);
   };
   
-  const handleReset = () => {
-    setPaymentIntent(null);
-    setView("checkout");
-    setError(null);
-  };
-
   const renderView = () => {
     if (!stripePromise) {
       return (
@@ -67,7 +62,7 @@ export function PaymentWrapper() {
         );
       case "summary":
         if (paymentIntent) {
-          return <OrderSummary paymentIntent={paymentIntent} onReset={handleReset} />;
+          return <OrderSummary paymentIntent={paymentIntent} />;
         }
         return null;
     }
