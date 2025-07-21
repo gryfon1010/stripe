@@ -45,6 +45,10 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
     const { db } = await connectToDatabase();
     console.log("Database connection successful for fulfillment.");
     
+    // Test database connection
+    await db.admin().ping();
+    console.log("Database ping successful.");
+    
     const paymentsCollection = db.collection('payments');
     
     const payment = {
@@ -54,18 +58,28 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
       status: paymentIntent.status,
       receiptEmail: paymentIntent.receipt_email,
       createdAt: new Date(paymentIntent.created * 1000), // Convert from Unix timestamp
+      processedAt: new Date(),
     };
 
-    console.log("Inserting payment document:", payment);
+    console.log("Inserting payment document:", JSON.stringify(payment, null, 2));
     const result = await paymentsCollection.insertOne(payment);
     console.log(`Successfully inserted payment ${paymentIntent.id} into DB with _id: ${result.insertedId}`);
+
+    // Verify the insertion
+    const insertedDoc = await paymentsCollection.findOne({ _id: result.insertedId });
+    console.log("Verified inserted document:", insertedDoc);
 
   } catch (error: any) {
     console.error("CRITICAL: Failed to fulfill order and save to DB.", {
       paymentIntentId: paymentIntent.id,
       error: error.message,
       stack: error.stack,
+      name: error.name,
+      code: error.code,
     });
+    
+    // Re-throw the error so it can be handled upstream if needed
+    throw error;
   }
 }
 
