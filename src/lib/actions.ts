@@ -2,6 +2,7 @@
 "use server";
 
 import Stripe from "stripe";
+import { connectToDatabase } from "./db";
 
 interface PaymentIntentOptions {
   amount?: number;
@@ -34,18 +35,31 @@ const getStripe = () => {
 }
 
 /**
- * Placeholder function for fulfilling an order.
- * @param paymentIntentId The ID of the successful PaymentIntent.
+ * Stores the successful payment information in the database.
+ * @param paymentIntent The successful PaymentIntent object from Stripe.
  */
-async function fulfillOrder(paymentIntentId: string) {
-  // TODO: Implement your order fulfillment logic here.
-  // This could involve:
-  // - Updating your database to mark the order as paid.
-  // - Granting access to a digital product.
-  // - Triggering a shipping process.
-  console.log(`Fulfilling order for PaymentIntent: ${paymentIntentId}`);
-  // Example: await db.orders.update({ where: { paymentIntentId }, data: { status: 'PAID' } });
-  return Promise.resolve();
+async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
+  try {
+    const { db } = await connectToDatabase();
+    const paymentsCollection = db.collection('payments');
+    
+    const payment = {
+      stripeId: paymentIntent.id,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      status: paymentIntent.status,
+      receiptEmail: paymentIntent.receipt_email,
+      createdAt: new Date(paymentIntent.created * 1000), // Convert from Unix timestamp
+    };
+    
+    await paymentsCollection.insertOne(payment);
+    console.log(`Successfully inserted payment ${paymentIntent.id} into DB.`);
+
+  } catch (error) {
+    console.error("Failed to fulfill order and save to DB:", error);
+    // You might want to add more robust error handling here,
+    // like sending a notification to your team.
+  }
 }
 
 /**
@@ -151,7 +165,7 @@ export async function handleWebhook(signature: string, body: string) {
       console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful!`);
       
       // Fulfill the order and send a confirmation email.
-      await fulfillOrder(paymentIntentSucceeded.id);
+      await fulfillOrder(paymentIntentSucceeded);
       await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email);
       
       break;
