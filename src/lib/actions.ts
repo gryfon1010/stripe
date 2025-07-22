@@ -197,27 +197,68 @@ async function sendOrderConfirmationEmail(customerEmail: string | null, paymentI
   console.log("📥 To email:", customerEmail);
   console.log("💰 Amount:", paymentIntent.amount / 100, paymentIntent.currency);
 
+  const amountUsd = (paymentIntent.amount / 100).toFixed(2);
+  const last4 = (paymentIntent as any).charges?.data?.[0]?.payment_method_details?.card?.last4 || '----';
+  const paymentDate = new Date().toLocaleDateString();
+  const htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=\"UTF-8\" />
+    <title>Your Payment Was Successful</title>
+    <style>
+      body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#800000;color:#fff;}
+      a{color:#fbbf24;text-decoration:none}
+      .card{max-width:600px;margin:48px auto;background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;}
+      .header{text-align:center;padding:32px 24px 12px;background:#800000;}
+      .check{width:64px;height:64px;border-radius:50%;background:#16a34a;line-height:64px;font-size:36px;color:#fff;margin:0 auto 16px}
+      .header h2{margin:0;color:#fff;}
+      .header p{margin-top:6px;color:#fbbf24;}
+      .content{padding:32px 32px 28px 32px;background:#fff;}
+      .summary-table{width:100%;border-collapse:separate;border-spacing:0 12px;}
+      .summary-table th{background:#f3f4f6;color:#800000;padding:10px 16px;text-align:left;font-size:15px;border-radius:6px 0 0 6px;}
+      .summary-table td{background:#f9fafb;color:#222;padding:10px 16px;font-size:15px;border-radius:0 6px 6px 0;}
+      .summary-table tr{margin-bottom:12px;}
+      .footer{text-align:center;padding:24px 12px 24px 12px;font-size:13px;color:#fff;background:#800000;}
+    </style>
+  </head>
+  <body>
+    <div class=\"card\">
+      <div class=\"header\">
+        <div class=\"check\">✓</div>
+        <h2>Payment Confirmed!</h2>
+        <p>Thank you for your purchase.</p>
+      </div>
+      <div class=\"content\">
+        <table class=\"summary-table\">
+          <tr>
+            <th>Order&nbsp;ID</th>
+            <td>${paymentIntent.id}</td>
+          </tr>
+          <tr>
+            <th>Amount&nbsp;Paid</th>
+            <td>$${amountUsd}</td>
+          </tr>
+          <tr>
+            <th>Payment&nbsp;Date</th>
+            <td>${paymentDate}</td>
+          </tr>
+          <tr>
+            <th>Payment&nbsp;Method</th>
+            <td>Stripe • **** **** **** ${last4}</td>
+          </tr>
+        </table>
+      </div>
+      <div class=\"footer\">Need help? Reply to this email and we’ll be right with you.</div>
+    </div>
+  </body>
+</html>`;
+
   const msg = {
     to: customerEmail,
     from: fromEmail, // Use a verified sender
     subject: 'Payment Confirmation - Transaction Successful',
-    text: `Thank you for your payment! Your transaction ID is ${paymentIntent.id}. The amount charged is ${(paymentIntent.amount / 100).toLocaleString('en-US', { style: 'currency', currency: paymentIntent.currency })}.`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Payment Confirmation</h2>
-        <p><strong>Thank you for your payment!</strong></p>
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <p><strong>Transaction Details:</strong></p>
-          <ul style="list-style: none; padding: 0;">
-            <li><strong>Transaction ID:</strong> ${paymentIntent.id}</li>
-            <li><strong>Amount:</strong> ${(paymentIntent.amount / 100).toLocaleString('en-US', { style: 'currency', currency: paymentIntent.currency })}</li>
-            <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
-          </ul>
-        </div>
-        <p>If you have any questions about this transaction, please contact our support team.</p>
-        <p>Thank you for your business!</p>
-      </div>
-    `,
+    text: `Thank you for your payment! Transaction ID: ${paymentIntent.id}. Amount charged: $${amountUsd}.`,
+    html: htmlTemplate,
   };
 
   console.log("📋 Email message object created:");
