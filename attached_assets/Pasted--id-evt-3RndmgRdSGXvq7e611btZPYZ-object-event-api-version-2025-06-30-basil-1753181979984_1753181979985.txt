@@ -1,0 +1,85 @@
+{
+  "id": "evt_3RndmgRdSGXvq7e611btZPYZ",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": 1753181460,
+  "data": {
+    "object": {
+      "id": "pi_3RndmgRdSGXvq7e61ZMsbkFA",
+      "object": "payment_intent",
+      "amount": 1000,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 1000,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": {
+        "allow_redirects": "always",
+        "enabled": true
+      },
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic_async",
+      "client_secret": "pi_3RndmgRdSGXvq7e61ZMsbkFA_secret_iixB4ID62wYknliPqzsiYRKMi",
+      "confirmation_method": "automatic",
+      "created": 1753181458,
+      "currency": "usd",
+      "customer": null,
+      "description": null,
+      "last_payment_error": null,
+      "latest_charge": "ch_3RndmgRdSGXvq7e61VyLOPyT",
+      "livemode": false,
+      "metadata": {
+        "original_amount": "10",
+        "customer_email": "zaryabk5888@gmail.com",
+        "code": "no-code"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": "pm_1RndmhRdSGXvq7e6gMyXsn5E",
+      "payment_method_configuration_details": {
+        "id": "pmc_1RkT2BRdSGXvq7e66ECA2eW8",
+        "parent": null
+      },
+      "payment_method_options": {
+        "card": {
+          "installments": {
+            "available_plans": [],
+            "enabled": true,
+            "plan": null
+          },
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        },
+        "link": {
+          "persistent_token": null
+        }
+      },
+      "payment_method_types": [
+        "card",
+        "link"
+      ],
+      "processing": null,
+      "receipt_email": "zaryabk5888@gmail.com",
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "succeeded",
+      "transfer_data": null,
+      "transfer_group": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_P8tzr1QmT7CbBT",
+    "idempotency_key": "6f67ba28-f581-4fc0-acf7-78a3f24616b8"
+  },
+  "type": "payment_intent.succeeded"
+}
