@@ -14,7 +14,7 @@ export async function GET() {
   };
 
   // Get confirmed transactions
-  const confirmedTransactions = getConfirmedTransactions();
+  const confirmedTransactions = await getConfirmedTransactions();
 
   return NextResponse.json({
     status: "healthy",

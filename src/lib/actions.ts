@@ -70,7 +70,7 @@ function getCodePrice(code: string): number {
 /**
  * Get stored confirmed transactions
  */
-export function getConfirmedTransactions() {
+export async function getConfirmedTransactions() {
   return confirmedTransactions;
 }
 
