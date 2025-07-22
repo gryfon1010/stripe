@@ -1,0 +1,99 @@
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+
+shared-19e026fcbb83e…c6355bc4a8556a.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-19e026fcbb83e…4a8556a.js:1:218214
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+shared-19e026fcbb83e…c6355bc4a8556a.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-19e026fcbb83e…4a8556a.js:1:218214
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+shared-19e026fcbb83e…c6355bc4a8556a.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-19e026fcbb83e…4a8556a.js:1:218214
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+Promise.catch		
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+e	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+c	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+log	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+log	@	controller-with-prec…a80e6727306e2d.js:1
+value	@	controller-with-prec…a80e6727306e2d.js:1
+(anonymous)	@	controller-with-prec…a80e6727306e2d.js:1
+n	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+a	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+i	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+Promise.then		
+a	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+i	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+Promise.then		
+a	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+i	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	controller-with-prec…a80e6727306e2d.js:1
+Promise.then		
+confirmPaymentIntent	@	controller-with-prec…a80e6727306e2d.js:1
+(anonymous)	@	controller-with-prec…a80e6727306e2d.js:1
+n	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+a	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+i	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	controller-with-prec…a80e6727306e2d.js:1
+value	@	controller-with-prec…a80e6727306e2d.js:1
+(anonymous)	@	controller-with-prec…a80e6727306e2d.js:1
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+shared-19e026fcbb83e…c6355bc4a8556a.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-19e026fcbb83e…4a8556a.js:1:218214
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+shared-19e026fcbb83e…c6355bc4a8556a.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-19e026fcbb83e…4a8556a.js:1:218214
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+universal-link-modal…ed57f164bb8a01.js:1 
+ POST https://errors.stripe.com/api/1572/envelope/?sentry_key=05d34cc…&sentry_version=7 429 (Too Many Requests)
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+ 
+ POST https://r.stripe.com/b net::ERR_BLOCKED_BY_CLIENT
+shared-19e026fcbb83e…c6355bc4a8556a.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-19e026fcbb83e…4a8556a.js:1:218214
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+Promise.catch		
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+e	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+c	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+setTimeout		
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+(anonymous)	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+value	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+log	@	shared-19e026fcbb83e…c6355bc4a8556a.js:1
+log	@	controller-with-prec…a80e6727306e2d.js:1
+pe	@	controller-with-prec…a80e6727306e2d.js:1
+(anonymous)	@	controller-with-prec…a80e6727306e2d.js:1
+
