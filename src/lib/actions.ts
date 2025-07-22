@@ -309,6 +309,7 @@ export async function handleWebhook(signature: string, body: string) {
   console.log("📅 Timestamp:", new Date().toISOString());
   console.log("🔍 Signature received:", signature ? "YES" : "NO");
   console.log("📦 Body received:", body ? `YES (${body.length} chars)` : "NO");
+  console.log("🌐 Webhook URL should be: https://your-repl-url.replit.dev/api/stripe/webhook");
 
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -336,6 +337,13 @@ export async function handleWebhook(signature: string, body: string) {
   }
 
   console.log(`📨 Processing verified Stripe event: ${event.type}`);
+
+  // Log webhook event summary
+  console.log("📊 WEBHOOK EVENT SUMMARY:");
+  console.log("- Event ID:", event.id);
+  console.log("- Event Type:", event.type);
+  console.log("- Created:", new Date(event.created * 1000).toISOString());
+  console.log("- Live Mode:", event.livemode ? "YES" : "NO (TEST MODE)");
 
   // Handle the event
   switch (event.type) {
