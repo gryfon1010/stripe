@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -43,75 +42,101 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
     }
   }, [code]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    console.log("=== CHECKOUT FORM SUBMIT ===");
+    console.log("📧 Email value:", email);
+    console.log("💰 Amount value:", amount);
+    console.log("🏷️ Code value:", code);
+
     if (!stripe || !elements) {
+      console.error("❌ Stripe or elements not available");
       return;
     }
 
     setIsLoading(true);
-    onError("");
-    
-    // First, submit the form to validate payment details on the client side
-    const { error: submitError } = await elements.submit();
-    if (submitError) {
-      onError(submitError.message || "An unexpected error occurred during form submission.");
+
+    // Step 1: Validate form
+    if (!amount || parseFloat(amount) <= 0) {
+      console.error("❌ Invalid amount:", amount);
+      onError("Please enter a valid amount.");
       setIsLoading(false);
       return;
     }
 
-    // If client-side validation is successful, create the Payment Intent
-    const response = await handlePaymentIntent({
-      amount: parseFloat(amount),
-      code: code || undefined,
-      email: email || undefined,
-    });
-
-    if (!response) {
-      onError("Failed to create payment intent - no response received.");
+    if (!email) {
+      console.error("❌ No email provided");
+      onError("Please enter your email address.");
       setIsLoading(false);
       return;
     }
 
-    const { clientSecret, error: backendError } = response;
+    console.log("✅ Form validation passed");
 
-    if (backendError || !clientSecret) {
-      onError(backendError || "Failed to create payment intent.");
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // Step 2: Create Payment Intent
+      console.log("💳 Calling handlePaymentIntent with:");
+      const paymentIntentParams = {
+        amount: parseFloat(amount),
+        email: email,
+        code: code || undefined
+      };
+      console.log("📋 Payment intent params:", JSON.stringify(paymentIntentParams, null, 2));
 
-    // Now, confirm the payment
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      clientSecret,
-      confirmParams: {
-        return_url: `${window.location.origin}/return`, // a dummy page for now
-      },
-      redirect: "if_required",
-    });
+      const response = await handlePaymentIntent(paymentIntentParams);
 
-    if (error) {
-      onError(error.message || "An unexpected error occurred.");
-    } else if (paymentIntent && paymentIntent.status === "succeeded") {
-      // Refetch the payment intent from the server to get full details
-      const fetchResponse = await handlePaymentIntent({
-        paymentIntentId: paymentIntent.id,
+      if (response.error) {
+        console.error("❌ PaymentIntent creation failed:", response.error);
+        onError(response.error);
+        setIsLoading(false);
+        return;
+      }
+
+      const clientSecret = response.clientSecret;
+      if (!clientSecret) {
+        console.error("❌ No client secret received");
+        onError("Failed to create payment session.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("✅ PaymentIntent created, confirming payment...");
+
+      // Step 3: Confirm Payment
+      const { error } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/success`,
+        },
+        redirect: "if_required",
       });
 
-      if (!fetchResponse) {
-        onError("Failed to retrieve payment details - no response received.");
-      } else {
-        const { paymentIntent: fullPaymentIntent, error: fetchError } = fetchResponse;
-        
-        if (fetchError || !fullPaymentIntent) {
-          onError(fetchError || "Failed to retrieve payment details.");
+      if (error) {
+        console.error("❌ Payment confirmation failed:", error);
+        if (error.type === "card_error" || error.type === "validation_error") {
+          onError(error.message || "An error occurred during payment.");
         } else {
-          onPaymentSuccess(fullPaymentIntent);
+          onError("An unexpected error occurred.");
+        }
+      } else {
+        console.log("✅ Payment confirmed, retrieving details...");
+        // Payment succeeded, get the payment intent
+        const piResponse = await handlePaymentIntent({
+          paymentIntentId: clientSecret.split('_secret')[0]
+        });
+
+        if (piResponse.paymentIntent) {
+          console.log("✅ Payment success callback triggered");
+          onPaymentSuccess(piResponse.paymentIntent);
+        } else {
+          console.error("❌ Couldn't retrieve payment details");
+          onError("Payment succeeded but couldn't retrieve details.");
         }
       }
-    } else {
-      onError("Payment was not successful.");
+    } catch (error) {
+      console.error("❌ Unexpected payment error:", error);
+      onError("An unexpected error occurred.");
     }
 
     setIsLoading(false);

@@ -204,13 +204,24 @@ async function sendPaymentFailedEmail(customerEmail: string | null, paymentInten
 export async function handlePaymentIntent(
   options: PaymentIntentOptions
 ): Promise<PaymentIntentResponse> {
+  console.log("=== HANDLE PAYMENT INTENT CALLED ===");
+  console.log("📋 Full options received:", JSON.stringify(options, null, 2));
+  console.log("📧 Email in options:", options.email);
+  console.log("💰 Amount in options:", options.amount);
+  console.log("🏷️ Code in options:", options.code);
+  console.log("🆔 PaymentIntent ID in options:", options.paymentIntentId);
+
   const stripe = getStripe();
 
   if (options.paymentIntentId) {
+    console.log("🔍 Retrieving existing PaymentIntent:", options.paymentIntentId);
     try {
       const paymentIntent = await stripe.paymentIntents.retrieve(options.paymentIntentId, {
         expand: ['payment_method']
       });
+
+      console.log("📋 Retrieved PaymentIntent metadata:", paymentIntent.metadata);
+      console.log("📧 Retrieved PaymentIntent receipt_email:", paymentIntent.receipt_email);
 
       const cardDetails = paymentIntent.payment_method && typeof paymentIntent.payment_method !== 'string' 
         ? paymentIntent.payment_method.card
@@ -226,6 +237,7 @@ export async function handlePaymentIntent(
 
       return { paymentIntent: simplifiedIntent };
     } catch (e: any) {
+      console.error("❌ Error retrieving PaymentIntent:", e.message);
       return { error: e.message };
     }
   }
@@ -237,15 +249,17 @@ export async function handlePaymentIntent(
     if (options.code && !options.amount) {
       // If only code is provided, use the mapped price
       finalAmount = getCodePrice(options.code);
+      console.log(`🏷️ Using code ${options.code} price: $${finalAmount}`);
     } else if (options.code && options.amount) {
       // If both are provided, you can choose to use code price or validate against it
       const codePrice = getCodePrice(options.code);
-      console.log(`Code ${options.code} maps to $${codePrice}, but amount $${options.amount} was also provided`);
+      console.log(`🏷️ Code ${options.code} maps to $${codePrice}, but amount $${options.amount} was also provided`);
       // For now, we'll use the provided amount, but you can change this logic
       finalAmount = options.amount;
     }
 
     if (!finalAmount || finalAmount <= 0.50) {
+      console.error("❌ Invalid amount:", finalAmount);
       return { error: "Amount must be at least $0.50." };
     }
 
@@ -255,7 +269,7 @@ export async function handlePaymentIntent(
       console.log("- Email:", options.email || "NONE");
       console.log("- Code:", options.code || "NONE");
 
-      const paymentIntent = await stripe.paymentIntents.create({
+      const createPaymentIntentData = {
         amount: Math.round(finalAmount * 100), // Amount in cents
         currency: "usd",
         automatic_payment_methods: { enabled: true },
@@ -265,21 +279,28 @@ export async function handlePaymentIntent(
           original_amount: finalAmount.toString(),
           customer_email: options.email || 'no-email-provided'
         }
-      });
+      };
 
-      console.log("✅ PaymentIntent created:", paymentIntent.id);
-      console.log("📧 Receipt email set to:", paymentIntent.receipt_email);
+      console.log("📋 PaymentIntent creation data:", JSON.stringify(createPaymentIntentData, null, 2));
+
+      const paymentIntent = await stripe.paymentIntents.create(createPaymentIntentData);
+
+      console.log("✅ PaymentIntent created successfully:");
+      console.log("- ID:", paymentIntent.id);
+      console.log("- Receipt email:", paymentIntent.receipt_email);
+      console.log("- Metadata:", JSON.stringify(paymentIntent.metadata, null, 2));
+      console.log("- Client secret:", paymentIntent.client_secret ? "PRESENT" : "MISSING");
 
       return { clientSecret: paymentIntent.client_secret ?? undefined };
     } catch (e: any) {
-      console.error("Error creating payment intent:", {
-        message: e.message,
-        stack: e.stack,
-      });
+      console.error("❌ Error creating payment intent:");
+      console.error("- Message:", e.message);
+      console.error("- Stack:", e.stack);
       return { error: e.message };
     }
   }
 
+  console.error("❌ Invalid options provided to handlePaymentIntent");
   return { error: "Invalid options provided." };
 }
 
