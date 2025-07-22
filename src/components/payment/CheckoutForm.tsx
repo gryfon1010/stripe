@@ -100,9 +100,20 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
         return;
       }
 
-      console.log("✅ PaymentIntent created, confirming payment...");
+      console.log("✅ PaymentIntent created, submitting elements...");
 
-      // Step 3: Confirm Payment
+      // Step 3: Submit elements first (required by Stripe)
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        console.error("❌ Elements submission failed:", submitError);
+        onError(submitError.message || "Failed to submit payment details.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("✅ Elements submitted, confirming payment...");
+
+      // Step 4: Confirm Payment
       const { error } = await stripe.confirmPayment({
         elements,
         clientSecret,
