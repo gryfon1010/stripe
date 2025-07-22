@@ -24,6 +24,16 @@ interface PaymentIntentResponse {
   error?: string;
 }
 
+// Transaction storage
+let confirmedTransactions: Array<{
+  id: string;
+  amount: number;
+  currency: string;
+  customerEmail: string;
+  timestamp: string;
+  metadata: any;
+}> = [];
+
 // Initialize SendGrid
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 if (sendGridApiKey) {
@@ -58,13 +68,39 @@ function getCodePrice(code: string): number {
 }
 
 /**
+ * Get stored confirmed transactions
+ */
+export function getConfirmedTransactions() {
+  return confirmedTransactions;
+}
+
+/**
  * Fulfills the order after successful payment.
  * @param paymentIntent The successful PaymentIntent object from Stripe.
  */
 async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
+  console.log("=== FULFILLING ORDER ===");
   console.log("Attempting to fulfill order for PaymentIntent:", paymentIntent.id);
   console.log(`Payment of ${paymentIntent.amount} succeeded! ID: ${paymentIntent.id}`);
-  // Add any other fulfillment logic here (email notifications, inventory updates, etc.)
+  
+  // Store transaction data
+  const customerEmail = paymentIntent.metadata?.customer_email && 
+                       paymentIntent.metadata.customer_email !== 'no-email-provided' 
+                       ? paymentIntent.metadata.customer_email 
+                       : paymentIntent.receipt_email || 'no-email';
+
+  const transactionData = {
+    id: paymentIntent.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    customerEmail,
+    timestamp: new Date().toISOString(),
+    metadata: paymentIntent.metadata
+  };
+
+  confirmedTransactions.push(transactionData);
+  console.log("✅ Transaction stored in memory:", transactionData);
+  console.log(`📊 Total confirmed transactions: ${confirmedTransactions.length}`);
 }
 
 /**
@@ -368,17 +404,13 @@ export async function handleWebhook(signature: string, body: string) {
       try {
         await fulfillOrder(paymentIntentSucceeded);
         console.log("✅ Order fulfillment completed");
+        console.log("🎉 TRANSACTION SUCCESS CONFIRMED BY STRIPE WEBHOOK! 🎉");
+        console.log(`💰 Amount: $${(paymentIntentSucceeded.amount / 100).toFixed(2)}`);
+        console.log(`📧 Customer: ${customerEmail}`);
+        console.log(`🆔 Transaction ID: ${paymentIntentSucceeded.id}`);
+        console.log("📊 Transaction data stored and ready for Firestore migration");
       } catch (fulfillError: any) {
         console.error("❌ Error during order fulfillment:", fulfillError);
-      }
-
-      // Send confirmation email
-      console.log("📧 Starting email sending process...");
-      try {
-        await sendOrderConfirmationEmail(customerEmail, paymentIntentSucceeded);
-        console.log("✅ Email sending process completed");
-      } catch (emailError: any) {
-        console.error("❌ Error during email sending:", emailError);
       }
 
       break;

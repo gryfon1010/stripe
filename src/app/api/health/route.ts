@@ -1,5 +1,6 @@
 
 import { NextResponse } from "next/server";
+import { getConfirmedTransactions } from "@/lib/actions";
 
 export async function GET() {
   const timestamp = new Date().toISOString();
@@ -12,6 +13,9 @@ export async function GET() {
     sendgrid_from_email: !!process.env.SENDGRID_FROM_EMAIL,
   };
 
+  // Get confirmed transactions
+  const confirmedTransactions = getConfirmedTransactions();
+
   return NextResponse.json({
     status: "healthy",
     timestamp,
@@ -19,6 +23,11 @@ export async function GET() {
     endpoints: {
       webhook: "/api/stripe/webhook",
       health: "/api/health"
+    },
+    transactions: {
+      total_confirmed: confirmedTransactions.length,
+      confirmed_transactions: confirmedTransactions,
+      ready_for_firestore: confirmedTransactions.length > 0
     }
   });
 }
