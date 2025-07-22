@@ -74,24 +74,35 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
  * @param paymentIntent The successful PaymentIntent object from Stripe.
  */
 async function sendOrderConfirmationEmail(customerEmail: string | null, paymentIntent?: Stripe.PaymentIntent) {
+  console.log("=== SENDING ORDER CONFIRMATION EMAIL ===");
+  console.log("📧 Customer email parameter:", customerEmail);
+  console.log("💳 PaymentIntent provided:", paymentIntent ? "YES" : "NO");
+  console.log("🔑 SendGrid API key available:", sendGridApiKey ? "YES" : "NO");
+  
   if (!customerEmail) {
-    console.log("No customer email provided, skipping order confirmation email.");
+    console.log("❌ No customer email provided, skipping order confirmation email.");
     return;
   }
 
   if (!sendGridApiKey) {
-    console.log("SendGrid API key not configured, skipping email send.");
+    console.log("❌ SendGrid API key not configured, skipping email send.");
+    console.log("💡 Make sure SENDGRID_API_KEY environment variable is set");
     return;
   }
 
   if (!paymentIntent) {
-    console.log("No payment intent provided, skipping email send.");
+    console.log("❌ No payment intent provided, skipping email send.");
     return;
   }
 
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@yourapp.com';
+  console.log("📤 From email:", fromEmail);
+  console.log("📥 To email:", customerEmail);
+  console.log("💰 Amount:", paymentIntent.amount / 100, paymentIntent.currency);
+
   const msg = {
     to: customerEmail,
-    from: process.env.SENDGRID_FROM_EMAIL || 'noreply@yourapp.com', // Use a verified sender
+    from: fromEmail, // Use a verified sender
     subject: 'Payment Confirmation - Transaction Successful',
     text: `Thank you for your payment! Your transaction ID is ${paymentIntent.id}. The amount charged is ${(paymentIntent.amount / 100).toLocaleString('en-US', { style: 'currency', currency: paymentIntent.currency })}.`,
     html: `
@@ -112,12 +123,25 @@ async function sendOrderConfirmationEmail(customerEmail: string | null, paymentI
     `,
   };
 
+  console.log("📋 Email message object created:");
+  console.log("- To:", msg.to);
+  console.log("- From:", msg.from);
+  console.log("- Subject:", msg.subject);
+
   try {
-    await sgMail.send(msg);
-    console.log('Transaction confirmation email sent successfully to:', customerEmail);
-  } catch (error) {
-    console.error('Error sending transaction confirmation email:', error);
+    console.log("📤 Attempting to send email via SendGrid...");
+    const response = await sgMail.send(msg);
+    console.log("✅ Transaction confirmation email sent successfully!");
+    console.log("📧 Sent to:", customerEmail);
+    console.log("📋 SendGrid response:", response);
+  } catch (error: any) {
+    console.error("❌ Error sending transaction confirmation email:");
+    console.error("🔍 Error details:", error);
+    if (error.response) {
+      console.error("📋 SendGrid API response:", error.response.body);
+    }
   }
+  console.log("=== EMAIL SENDING COMPLETED ===");
 }
 
 /**
@@ -227,6 +251,11 @@ export async function handlePaymentIntent(
     }
     
     try {
+      console.log("💳 Creating PaymentIntent with:");
+      console.log("- Amount:", Math.round(finalAmount * 100), "cents");
+      console.log("- Email:", options.email || "NONE");
+      console.log("- Code:", options.code || "NONE");
+      
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(finalAmount * 100), // Amount in cents
         currency: "usd",
@@ -238,6 +267,9 @@ export async function handlePaymentIntent(
           customer_email: options.email || 'no-email-provided'
         }
       });
+
+      console.log("✅ PaymentIntent created:", paymentIntent.id);
+      console.log("📧 Receipt email set to:", paymentIntent.receipt_email);
 
       return { clientSecret: paymentIntent.client_secret ?? undefined };
     } catch (e: any) {
@@ -253,12 +285,20 @@ export async function handlePaymentIntent(
 }
 
 export async function handleWebhook(signature: string, body: string) {
-  console.log("Stripe webhook handler invoked.");
+  console.log("=== STRIPE WEBHOOK HANDLER INVOKED ===");
+  console.log("Signature received:", signature ? "YES" : "NO");
+  console.log("Body received:", body ? `YES (${body.length} chars)` : "NO");
+  
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  console.log("Environment variables check:");
+  console.log("- STRIPE_WEBHOOK_SECRET:", webhookSecret ? "SET" : "NOT SET");
+  console.log("- SENDGRID_API_KEY:", process.env.SENDGRID_API_KEY ? "SET" : "NOT SET");
+  console.log("- SENDGRID_FROM_EMAIL:", process.env.SENDGRID_FROM_EMAIL ? "SET" : "NOT SET");
+
   if (!webhookSecret) {
-    console.error("Stripe webhook secret is not configured.");
+    console.error("❌ Stripe webhook secret is not configured.");
     return { error: "Webhook secret not configured.", status: 500 };
   }
 
@@ -266,28 +306,32 @@ export async function handleWebhook(signature: string, body: string) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    console.log("Stripe event constructed successfully:", event.id);
+    console.log("✅ Stripe event constructed successfully:", event.id);
   } catch (err: any) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
+    console.error(`❌ Webhook signature verification failed: ${err.message}`);
     return { error: `Webhook Error: ${err.message}`, status: 400 };
   }
   
-  console.log(`Received verified Stripe event: ${event.type}`);
+  console.log(`📨 Received verified Stripe event: ${event.type}`);
 
   // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
-      console.log(`PaymentIntent for ${paymentIntentSucceeded.amount} was successful! ID: ${paymentIntentSucceeded.id}`);
+      console.log(`💰 PaymentIntent for ${paymentIntentSucceeded.amount} was successful! ID: ${paymentIntentSucceeded.id}`);
+      console.log(`📧 Customer email from PaymentIntent: ${paymentIntentSucceeded.receipt_email || 'NONE'}`);
+      console.log(`📋 PaymentIntent metadata:`, paymentIntentSucceeded.metadata);
       
       // Fulfill the order and send a confirmation email.
       await fulfillOrder(paymentIntentSucceeded);
+      console.log("🚀 About to send confirmation email...");
       await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email, paymentIntentSucceeded);
       
       break;
     case 'payment_intent.payment_failed':
       const paymentIntentFailed = event.data.object as Stripe.PaymentIntent;
-      console.log(`Payment failed for PaymentIntent: ${paymentIntentFailed.id}`);
+      console.log(`❌ Payment failed for PaymentIntent: ${paymentIntentFailed.id}`);
+      console.log(`📧 Customer email from failed PaymentIntent: ${paymentIntentFailed.receipt_email || 'NONE'}`);
       
       // Notify the user that their payment failed.
       await sendPaymentFailedEmail(paymentIntentFailed.receipt_email, paymentIntentFailed);
@@ -295,8 +339,9 @@ export async function handleWebhook(signature: string, body: string) {
       break;
     // ... handle other event types you care about
     default:
-      console.log(`Unhandled event type ${event.type}`);
+      console.log(`🤷 Unhandled event type ${event.type}`);
   }
 
+  console.log("=== WEBHOOK HANDLER COMPLETED ===");
   return { received: true, status: 200 };
 }
