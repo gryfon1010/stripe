@@ -13,21 +13,19 @@ export async function GET() {
     sendgrid_from_email: !!process.env.SENDGRID_FROM_EMAIL,
   };
 
-  // Get confirmed transactions
-  const confirmedTransactions = await getConfirmedTransactions();
-
   return NextResponse.json({
     status: "healthy",
     timestamp,
     environment: envCheck,
     endpoints: {
       webhook: "/api/stripe/webhook",
-      health: "/api/health"
+      health: "/api/health",
+      transactions: "/api/transactions"
     },
-    transactions: {
-      total_confirmed: confirmedTransactions.length,
-      confirmed_transactions: confirmedTransactions,
-      ready_for_firestore: confirmedTransactions.length > 0
+    services: {
+      stripe: envCheck.stripe_secret && envCheck.stripe_webhook_secret,
+      sendgrid: envCheck.sendgrid_api_key && envCheck.sendgrid_from_email,
+      webhook_ready: !!envCheck.stripe_webhook_secret
     }
   });
 }

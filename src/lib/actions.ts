@@ -34,6 +34,35 @@ let confirmedTransactions: Array<{
   metadata: any;
 }> = [];
 
+// Load transactions from file on startup
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const transactionsFile = path.join(process.cwd(), 'transactions.json');
+  
+  if (fs.existsSync(transactionsFile)) {
+    const data = fs.readFileSync(transactionsFile, 'utf8');
+    confirmedTransactions = JSON.parse(data);
+    console.log(`📁 Loaded ${confirmedTransactions.length} transactions from file`);
+  }
+} catch (error) {
+  console.log('📁 No existing transactions file found, starting fresh');
+}
+
+// Save transactions to file
+function saveTransactionsToFile() {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const transactionsFile = path.join(process.cwd(), 'transactions.json');
+    
+    fs.writeFileSync(transactionsFile, JSON.stringify(confirmedTransactions, null, 2));
+    console.log(`💾 Saved ${confirmedTransactions.length} transactions to file`);
+  } catch (error) {
+    console.error('❌ Error saving transactions to file:', error);
+  }
+}
+
 // Initialize SendGrid
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 if (sendGridApiKey) {
@@ -99,8 +128,14 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
   };
 
   confirmedTransactions.push(transactionData);
-  console.log("✅ Transaction stored in memory:", transactionData);
+  saveTransactionsToFile();
+  console.log("✅ Transaction stored persistently:", transactionData);
   console.log(`📊 Total confirmed transactions: ${confirmedTransactions.length}`);
+  console.log("🎉 TRANSACTION SUCCESS CONFIRMED BY STRIPE WEBHOOK! 🎉");
+  console.log(`💰 Amount: $${(transactionData.amount / 100).toFixed(2)}`);
+  console.log(`📧 Customer: ${transactionData.customerEmail}`);
+  console.log(`🆔 Transaction ID: ${transactionData.id}`);
+  console.log("📊 View all transactions at: /api/transactions");
 }
 
 /**
