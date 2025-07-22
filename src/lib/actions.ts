@@ -134,7 +134,8 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
     currency: paymentIntent.currency,
     customerEmail,
     timestamp: new Date().toISOString(),
-    metadata: paymentIntent.metadata
+    metadata: paymentIntent.metadata,
+    emailSent: false
   };
 
   confirmedTransactions.push(transactionData);
@@ -143,6 +144,12 @@ try {
     const db = (await import("@/lib/firebaseAdmin")).getAdminDb();
     await db.collection("transactions").doc(paymentIntent.id).set(transactionData);
     console.log("✅ Transaction written to Firestore");
+    // Send confirmation email if not sent yet
+    if (!transactionData.emailSent) {
+      await sendOrderConfirmationEmail(customerEmail, paymentIntent);
+      await db.collection("transactions").doc(paymentIntent.id).update({ emailSent: true, emailSentAt: new Date().toISOString() });
+      console.log("📧 Confirmation email sent and Firestore updated");
+    }
 } catch (err) {
     console.error("❌ Failed to write transaction to Firestore:", err);
     // Fallback to JSON file so we don't lose data
