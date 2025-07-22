@@ -2,6 +2,7 @@
 "use server";
 
 import Stripe from "stripe";
+import sgMail from '@sendgrid/mail';
 
 interface PaymentIntentOptions {
   amount?: number;
@@ -21,6 +22,12 @@ interface PaymentIntentResponse {
   clientSecret?: string;
   paymentIntent?: SimplePaymentIntent;
   error?: string;
+}
+
+// Initialize SendGrid
+const sendGridApiKey = process.env.SENDGRID_API_KEY;
+if (sendGridApiKey) {
+  sgMail.setApiKey(sendGridApiKey);
 }
 
 const getStripe = () => {
@@ -61,34 +68,112 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
 }
 
 /**
- * Placeholder function for sending an order confirmation email.
+ * Sends a transaction confirmation email using SendGrid.
  * @param customerEmail The email address of the customer.
+ * @param paymentIntent The successful PaymentIntent object from Stripe.
  */
-async function sendOrderConfirmationEmail(customerEmail: string | null) {
+async function sendOrderConfirmationEmail(customerEmail: string | null, paymentIntent?: Stripe.PaymentIntent) {
   if (!customerEmail) {
     console.log("No customer email provided, skipping order confirmation email.");
     return;
+  }
+
+  if (!sendGridApiKey) {
+    console.log("SendGrid API key not configured, skipping email send.");
+    return;
+  }
+
+  if (!paymentIntent) {
+    console.log("No payment intent provided, skipping email send.");
+    return;
+  }
+
+  const msg = {
+    to: customerEmail,
+    from: process.env.SENDGRID_FROM_EMAIL || 'noreply@yourapp.com', // Use a verified sender
+    subject: 'Payment Confirmation - Transaction Successful',
+    text: `Thank you for your payment! Your transaction ID is ${paymentIntent.id}. The amount charged is ${(paymentIntent.amount / 100).toLocaleString('en-US', { style: 'currency', currency: paymentIntent.currency })}.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Payment Confirmation</h2>
+        <p><strong>Thank you for your payment!</strong></p>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Transaction Details:</strong></p>
+          <ul style="list-style: none; padding: 0;">
+            <li><strong>Transaction ID:</strong> ${paymentIntent.id}</li>
+            <li><strong>Amount:</strong> ${(paymentIntent.amount / 100).toLocaleString('en-US', { style: 'currency', currency: paymentIntent.currency })}</li>
+            <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+          </ul>
+        </div>
+        <p>If you have any questions about this transaction, please contact our support team.</p>
+        <p>Thank you for your business!</p>
+      </div>
+    `,
   };
-  // TODO: Implement your email sending logic here.
-  // Use a service like SendGrid, Resend, or Nodemailer.
-  console.log(`Sending order confirmation to: ${customerEmail}`);
-  // Example: await emailService.send({ to: customerEmail, subject: 'Your order is confirmed!', ... });
-  return Promise.resolve();
+
+  try {
+    await sgMail.send(msg);
+    console.log('Transaction confirmation email sent successfully to:', customerEmail);
+  } catch (error) {
+    console.error('Error sending transaction confirmation email:', error);
+  }
 }
 
 /**
- * Placeholder function for sending a payment failed email.
+ * Sends a payment failed notification email using SendGrid.
  * @param customerEmail The email address of the customer.
+ * @param paymentIntent The failed PaymentIntent object from Stripe.
  */
-async function sendPaymentFailedEmail(customerEmail: string | null) {
+async function sendPaymentFailedEmail(customerEmail: string | null, paymentIntent?: Stripe.PaymentIntent) {
   if (!customerEmail) {
     console.log("No customer email provided, skipping payment failed email.");
     return;
+  }
+
+  if (!sendGridApiKey) {
+    console.log("SendGrid API key not configured, skipping email send.");
+    return;
+  }
+
+  if (!paymentIntent) {
+    console.log("No payment intent provided, skipping email send.");
+    return;
+  }
+
+  const msg = {
+    to: customerEmail,
+    from: process.env.SENDGRID_FROM_EMAIL || 'noreply@yourapp.com', // Use a verified sender
+    subject: 'Payment Failed - Action Required',
+    text: `We're sorry, but your payment could not be processed. Transaction ID: ${paymentIntent.id}. Please try again or contact support for assistance.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #d32f2f;">Payment Failed</h2>
+        <p>We're sorry, but your payment could not be processed.</p>
+        <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ff9800;">
+          <p><strong>Transaction Details:</strong></p>
+          <ul style="list-style: none; padding: 0;">
+            <li><strong>Transaction ID:</strong> ${paymentIntent.id}</li>
+            <li><strong>Attempted Amount:</strong> ${(paymentIntent.amount / 100).toLocaleString('en-US', { style: 'currency', currency: paymentIntent.currency })}</li>
+            <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+          </ul>
+        </div>
+        <p>Please try the following:</p>
+        <ul>
+          <li>Check your payment method details</li>
+          <li>Ensure sufficient funds are available</li>
+          <li>Try a different payment method</li>
+        </ul>
+        <p>If you continue to experience issues, please contact our support team.</p>
+      </div>
+    `,
   };
-  // TODO: Implement your email sending logic for failed payments.
-  console.log(`Sending payment failed notification to: ${customerEmail}`);
-  // Example: await emailService.send({ to: customerEmail, subject: 'Your payment failed', ... });
-  return Promise.resolve();
+
+  try {
+    await sgMail.send(msg);
+    console.log('Payment failed notification email sent successfully to:', customerEmail);
+  } catch (error) {
+    console.error('Error sending payment failed notification email:', error);
+  }
 }
 
 
@@ -195,7 +280,7 @@ export async function handleWebhook(signature: string, body: string) {
       
       // Fulfill the order and send a confirmation email.
       await fulfillOrder(paymentIntentSucceeded);
-      await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email);
+      await sendOrderConfirmationEmail(paymentIntentSucceeded.receipt_email, paymentIntentSucceeded);
       
       break;
     case 'payment_intent.payment_failed':
@@ -203,7 +288,7 @@ export async function handleWebhook(signature: string, body: string) {
       console.log(`Payment failed for PaymentIntent: ${paymentIntentFailed.id}`);
       
       // Notify the user that their payment failed.
-      await sendPaymentFailedEmail(paymentIntentFailed.receipt_email);
+      await sendPaymentFailedEmail(paymentIntentFailed.receipt_email, paymentIntentFailed);
       
       break;
     // ... handle other event types you care about
