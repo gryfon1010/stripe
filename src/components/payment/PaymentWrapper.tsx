@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 
 type View = "checkout" | "summary";
 
@@ -41,6 +42,10 @@ export function PaymentWrapper() {
   }, []);
   
   const handlePaymentSuccess = (intent: SimplePaymentIntent) => {
+  toast({
+    title: "Payment confirmed",
+    description: `Transaction ${intent.id} stored successfully.`,
+  });
     setPaymentIntent(intent);
     setView("summary");
     setError(null);
