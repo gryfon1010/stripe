@@ -24,6 +24,7 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [amount, setAmount] = useState("10.00");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPaymentElementComplete, setIsPaymentElementComplete] = useState(false);
 
@@ -63,6 +64,7 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
     const response = await handlePaymentIntent({
       amount: parseFloat(amount),
       code: code || undefined,
+      email: email || undefined,
     });
 
     if (!response) {
@@ -126,6 +128,17 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
+          <Label htmlFor="email">Email Address</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            required
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="amount">Amount (USD)</Label>
           <div className="relative">
              <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
@@ -147,7 +160,7 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
         <Button
           type="submit"
           className="w-full transition-all"
-          disabled={!stripe || !elements || isLoading || !amount || !isPaymentElementComplete}
+          disabled={!stripe || !elements || isLoading || !amount || !email || !isPaymentElementComplete}
         >
           {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

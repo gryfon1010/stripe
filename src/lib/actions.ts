@@ -8,6 +8,7 @@ interface PaymentIntentOptions {
   amount?: number;
   paymentIntentId?: string;
   code?: string;
+  email?: string;
 }
 
 export interface SimplePaymentIntent {
@@ -230,10 +231,11 @@ export async function handlePaymentIntent(
         amount: Math.round(finalAmount * 100), // Amount in cents
         currency: "usd",
         automatic_payment_methods: { enabled: true },
-        receipt_email: 'customer@example.com', // Example email, replace with actual customer email if available
+        receipt_email: options.email || null,
         metadata: {
           code: options.code || 'no-code',
-          original_amount: finalAmount.toString()
+          original_amount: finalAmount.toString(),
+          customer_email: options.email || 'no-email-provided'
         }
       });
 
