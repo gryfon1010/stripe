@@ -24,7 +24,7 @@ interface PaymentIntentResponse {
   error?: string;
 }
 
-// Transaction storage
+// Transaction storage (in-memory cache to reduce reads)
 let confirmedTransactions: Array<{
   id: string;
   amount: number;
@@ -100,7 +100,17 @@ function getCodePrice(code: string): number {
  * Get stored confirmed transactions
  */
 export async function getConfirmedTransactions() {
-  return confirmedTransactions;
+  // Try Firestore first
+  try {
+    const db = (await import("@/lib/firebaseAdmin")).getAdminDb();
+    const snapshot = await db.collection("transactions").orderBy("timestamp", "desc").get();
+    const docs = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>) => doc.data() as any);
+    confirmedTransactions = docs as any;
+    return confirmedTransactions;
+  } catch (err) {
+    console.warn("⚠️ Could not fetch from Firestore, falling back to JSON file:", err);
+    return confirmedTransactions;
+  }
 }
 
 /**
@@ -128,7 +138,17 @@ async function fulfillOrder(paymentIntent: Stripe.PaymentIntent) {
   };
 
   confirmedTransactions.push(transactionData);
-  saveTransactionsToFile();
+  // Persist to Firestore
+try {
+    const db = (await import("@/lib/firebaseAdmin")).getAdminDb();
+    await db.collection("transactions").doc(paymentIntent.id).set(transactionData);
+    console.log("✅ Transaction written to Firestore");
+} catch (err) {
+    console.error("❌ Failed to write transaction to Firestore:", err);
+    // Fallback to JSON file so we don't lose data
+    saveTransactionsToFile();
+}
+
   console.log("✅ Transaction stored persistently:", transactionData);
   console.log(`📊 Total confirmed transactions: ${confirmedTransactions.length}`);
   console.log("🎉 TRANSACTION SUCCESS CONFIRMED BY STRIPE WEBHOOK! 🎉");
@@ -344,7 +364,7 @@ export async function handlePaymentIntent(
         amount: Math.round(finalAmount * 100), // Amount in cents
         currency: "usd",
         automatic_payment_methods: { enabled: true },
-        receipt_email: options.email || null,
+        receipt_email: options.email || undefined,
         metadata: {
           code: options.code || 'no-code',
           original_amount: finalAmount.toString(),
