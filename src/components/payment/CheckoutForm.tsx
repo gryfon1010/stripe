@@ -14,40 +14,92 @@ interface CheckoutFormProps {
   stripePromise: Promise<StripeType | null>;
   onPaymentSuccess: (paymentIntent: SimplePaymentIntent) => void;
   onError: (message: string) => void;
-  code?: string | null;
+  code1?: string | null;
+  code2?: string | null;
 }
 
-interface FormContentProps extends Omit<CheckoutFormProps, 'stripePromise'>{}
+interface FormContentProps extends Omit<CheckoutFormProps, 'stripePromise'>{
+  code1?: string | null;
+  code2?: string | null;
+}
 
-function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
+function FormContent({ onPaymentSuccess, onError, code1, code2 }: FormContentProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [amount, setAmount] = useState("10.00");
+  const [userFields, setUserFields] = useState<{ address?: string; uid?: string; email?: string } | null>(null);
+  const [doctorFields, setDoctorFields] = useState<{ consultationFee?: number; email?: string; uid?: string } | null>(null);
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPaymentElementComplete, setIsPaymentElementComplete] = useState(false);
 
+  // When userFields changes, auto-fill email if available
+  useEffect(() => {
+    if (userFields && (userFields as any).email) {
+      setEmail((userFields as any).email);
+    }
+  }, [userFields]);
+
   // Set default amount based on code
   useEffect(() => {
-    if (code) {
-      // Map code to price - you can customize this logic later
-      const priceMap: { [key: string]: string } = {
-        'basic': '5.00',
-        'premium': '15.00',
-        'pro': '25.00',
-        'enterprise': '50.00'
-      };
-      const mappedPrice = priceMap[code.toLowerCase()] || '10.00';
-      setAmount(mappedPrice);
-    }
-  }, [code]);
+    if (!(code1 && code2)) return;
+    (async () => {
+      try {
+        const { getApps, initializeApp } = await import('firebase/app');
+        const { getFirestore, doc, getDoc } = await import('firebase/firestore');
+        const firebaseConfig = {
+          apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        };
+        let app;
+        if (getApps().length === 0) {
+          app = initializeApp(firebaseConfig);
+        } else {
+          app = getApps()[0];
+        }
+        const db = getFirestore(app);
+        const [doctorSnap, userSnap] = await Promise.all([
+          getDoc(doc(db, 'doctors', code1)),
+          getDoc(doc(db, 'users', code2)),
+        ]);
+        let userFields = null, doctorFields = null;
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          userFields = {
+            address: userData.address,
+            uid: userData.uid,
+            email: userData.email,
+          };
+        }
+        if (doctorSnap.exists()) {
+          const doctorData = doctorSnap.data();
+          doctorFields = {
+            consultationFee: doctorData.consultationFee,
+            email: doctorData.email,
+            uid: doctorData.uid,
+          };
+          // If consultationFee is defined and > 0, set it as amount
+          if (doctorData.consultationFee && !isNaN(Number(doctorData.consultationFee))) {
+            setAmount(doctorData.consultationFee.toString());
+          }
+        }
+        setUserFields(userFields);
+        setDoctorFields(doctorFields);
+        console.log('[CLIENT] User fields:', userFields);
+        console.log('[CLIENT] Doctor fields:', doctorFields);
+      } catch (err) {
+        console.error('[CLIENT] Firestore fetch error:', err);
+      }
+    })();
+  }, [code1, code2]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     console.log("=== CHECKOUT FORM SUBMIT ===");
     console.log("📧 Email value:", email);
     console.log("💰 Amount value:", amount);
-    console.log("🏷️ Code value:", code);
+    console.log("🏷️ Code1:", code1, "Code2:", code2);
 
     if (!stripe || !elements) {
       console.error("❌ Stripe or elements not available");
@@ -79,7 +131,8 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
       const paymentIntentParams = {
         amount: parseFloat(amount),
         email: email,
-        code: code || undefined
+        code1: code1 || undefined,
+        code2: code2 || undefined
       };
       console.log("📋 Payment intent params:", JSON.stringify(paymentIntentParams, null, 2));
 
@@ -159,7 +212,7 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
          <CreditCard className="mx-auto h-12 w-12 text-primary" />
         <h2 className="text-2xl font-bold font-headline">One-Time Payment</h2>
         <p className="text-muted-foreground">
-          {code ? `Payment for code: ${code}` : 'Enter an amount and your payment details below.'}
+          {code1 && code2 ? `Doctor ${code1} / User ${code2}` : 'Enter an amount and your payment details below.'}
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,7 +241,7 @@ function FormContent({ onPaymentSuccess, onError, code }: FormContentProps) {
                 min="0.50"
                 step="0.01"
                 className="pl-7"
-                disabled={!!code}
+                disabled={!!(code1 && code2)}
             />
           </div>
         </div>

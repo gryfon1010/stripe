@@ -6,7 +6,8 @@ import sgMail from '@sendgrid/mail';
 interface PaymentIntentOptions {
   amount?: number;
   paymentIntentId?: string;
-  code?: string;
+  code1?: string;
+  code2?: string;
   email?: string;
 }
 
@@ -78,22 +79,6 @@ const getStripe = () => {
     apiVersion: "2024-06-20",
     typescript: true,
   });
-}
-
-/**
- * Maps a code to a price. You can customize this logic as needed.
- * @param code The code to map to a price
- * @returns The price in dollars
- */
-function getCodePrice(code: string): number {
-  const priceMap: { [key: string]: number } = {
-    'basic': 5.00,
-    'premium': 15.00,
-    'pro': 25.00,
-    'enterprise': 50.00
-  };
-
-  return priceMap[code.toLowerCase()] || 10.00; // Default to $10.00 if code not found
 }
 
 /**
@@ -347,7 +332,7 @@ export async function handlePaymentIntent(
   console.log("📋 Full options received:", JSON.stringify(options, null, 2));
   console.log("📧 Email in options:", options.email);
   console.log("💰 Amount in options:", options.amount);
-  console.log("🏷️ Code in options:", options.code);
+  console.log("🏷️ Codes in options:", { code1: options.code1, code2: options.code2 });
   console.log("🆔 PaymentIntent ID in options:", options.paymentIntentId);
 
   const stripe = getStripe();
@@ -381,23 +366,10 @@ export async function handlePaymentIntent(
     }
   }
 
-  if (options.amount || options.code) {
-    // Determine the amount to charge
-    let finalAmount = options.amount;
+  if (options.amount) {
+    const finalAmount = options.amount;
 
-    if (options.code && !options.amount) {
-      // If only code is provided, use the mapped price
-      finalAmount = getCodePrice(options.code);
-      console.log(`🏷️ Using code ${options.code} price: $${finalAmount}`);
-    } else if (options.code && options.amount) {
-      // If both are provided, you can choose to use code price or validate against it
-      const codePrice = getCodePrice(options.code);
-      console.log(`🏷️ Code ${options.code} maps to $${codePrice}, but amount $${options.amount} was also provided`);
-      // For now, we'll use the provided amount, but you can change this logic
-      finalAmount = options.amount;
-    }
-
-    if (!finalAmount || finalAmount <= 0.50) {
+    if (finalAmount <= 0.5) {
       console.error("❌ Invalid amount:", finalAmount);
       return { error: "Amount must be at least $0.50." };
     }
@@ -406,35 +378,25 @@ export async function handlePaymentIntent(
       console.log("💳 Creating PaymentIntent with:");
       console.log("- Amount:", Math.round(finalAmount * 100), "cents");
       console.log("- Email:", options.email || "NONE");
-      console.log("- Code:", options.code || "NONE");
+      console.log("- Codes:", { code1: options.code1 || "NONE", code2: options.code2 || "NONE" });
 
-      const createPaymentIntentData = {
-        amount: Math.round(finalAmount * 100), // Amount in cents
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(finalAmount * 100),
         currency: "usd",
         automatic_payment_methods: { enabled: true },
         receipt_email: options.email || undefined,
         metadata: {
-          code: options.code || 'no-code',
+          code1: options.code1 || "no-code1",
+          code2: options.code2 || "no-code2",
           original_amount: finalAmount.toString(),
-          customer_email: options.email || 'no-email-provided'
+          customer_email: options.email || "no-email-provided"
         }
-      };
+      });
 
-      console.log("📋 PaymentIntent creation data:", JSON.stringify(createPaymentIntentData, null, 2));
-
-      const paymentIntent = await stripe.paymentIntents.create(createPaymentIntentData);
-
-      console.log("✅ PaymentIntent created successfully:");
-      console.log("- ID:", paymentIntent.id);
-      console.log("- Receipt email:", paymentIntent.receipt_email);
-      console.log("- Metadata:", JSON.stringify(paymentIntent.metadata, null, 2));
-      console.log("- Client secret:", paymentIntent.client_secret ? "PRESENT" : "MISSING");
-
+      console.log("✅ PaymentIntent created successfully (ID:", paymentIntent.id, ")");
       return { clientSecret: paymentIntent.client_secret ?? undefined };
     } catch (e: any) {
-      console.error("❌ Error creating payment intent:");
-      console.error("- Message:", e.message);
-      console.error("- Stack:", e.stack);
+      console.error("❌ Error creating payment intent:", e);
       return { error: e.message };
     }
   }
